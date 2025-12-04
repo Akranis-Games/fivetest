@@ -1,14 +1,13 @@
 -- ==============================================================
--- esx_keys - server.lua | 100% oxmysql 2.7+ / 3.0+ kompatibel (2025)
+-- esx_keys - server.lua | 100% oxmysql 3.0+ kompatibel (Dez 2025)
 -- ==============================================================
 
 local ESX = exports['es_extended']:getSharedObject()
 local MySQL = exports.oxmysql
 
 -- ==============================================================
--- BESTES SCHEMA 2025 – wird beim Start erstellt (kein Fehler mehr)
+-- SCHEMA – funktioniert mit allen oxmysql-Versionen
 -- ==============================================================
-
 MySQL.prepare.await([[
     CREATE TABLE IF NOT EXISTS `player_keys` (
         `id`            INT(11)        NOT NULL AUTO_INCREMENT,
@@ -26,10 +25,10 @@ MySQL.prepare.await([[
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 ]], {})
 
-print('^2[esx_keys] Tabelle `player_keys` erfolgreich geladen/erstellt^7')
+print('^2[esx_keys] Tabelle `player_keys` erfolgreich geladen/erstellt^7 (oxmysql 3.0+)')
 
 -- ==============================================================
--- FUNKTIONEN
+-- FUNKTIONEN (3.0+ kompatibel: Keine key[1] Indizierung!)
 -- ==============================================================
 
 local function GetPlayerKeys(source)
@@ -74,8 +73,7 @@ local function RemoveKey(source, keyId)
     if not xPlayer then return false end
 
     local key = MySQL.prepare.await('SELECT * FROM player_keys WHERE id = ? AND owner_id = ?', { keyId, xPlayer.identifier })
-    if not key or not key[1] then return false end
-    key = key[1]
+    if not key then return false end  -- 3.0+: key ist direkt das Objekt
 
     MySQL.prepare.await('DELETE FROM player_keys WHERE id = ?', { keyId })
     xPlayer.removeInventoryItem(key.key_type, 1)
@@ -93,8 +91,7 @@ local function DuplicateKey(source, keyId)
     end
 
     local key = MySQL.prepare.await('SELECT * FROM player_keys WHERE id = ? AND owner_id = ?', { keyId, xPlayer.identifier })
-    if not key or not key[1] then return false end
-    key = key[1]
+    if not key then return false end  -- 3.0+: key ist direkt das Objekt
 
     MySQL.prepare.await([[
         INSERT INTO player_keys (owner_id, key_type, target_type, target_id, target_label)
@@ -108,7 +105,7 @@ local function DuplicateKey(source, keyId)
 end
 
 -- ==============================================================
--- CALLBACKS & EVENTS
+-- CALLBACKS & EVENTS (unverändert)
 -- ==============================================================
 
 ESX.RegisterServerCallback('esx_keys:getPlayerKeys', function(source, cb)
@@ -133,7 +130,7 @@ RegisterNetEvent('esx_keys:duplicateKey', function(keyId)
 end)
 
 -- ==============================================================
--- COMMANDS & USABLE ITEMS
+-- COMMANDS & USABLE ITEMS (unverändert)
 -- ==============================================================
 
 RegisterCommand('givekey', function(source, args)
@@ -156,4 +153,4 @@ ESX.RegisterUsableItem('house_key',   function(source) TriggerClientEvent('esx:s
 ESX.RegisterUsableItem('safe_key',    function(source) TriggerClientEvent('esx:showNotification', source, 'Tresorschlüssel bereit') end)
 ESX.RegisterUsableItem('master_key',  function(source) TriggerClientEvent('esx:showNotification', source, 'Generalschlüssel bereit') end)
 
-print('^2[esx_keys] Schlüssel-System vollständig geladen – 100% oxmysql 2025 kompatibel!^7')
+print('^2[esx_keys] Schlüssel-System vollständig geladen – 100% oxmysql 3.0+ kompatibel!^7')
